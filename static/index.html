@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline Voice Studio</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262a35;--text:#e8eaf0;--muted:#8b91a1;--accent:#7c5cff;--accent2:#9f86ff;--danger:#ff5c7a;--ok:#3ecf8e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;margin:0}
+  .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .pill.ok{color:var(--ok);border-color:#24533f}
+  main{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+  main>section,main>aside,.card,.item{min-width:0}
+  @media(max-width:860px){main{grid-template-columns:minmax(0,1fr);padding:16px}}
+  #history,#voices{max-height:520px;overflow-y:auto;padding-right:4px}
+  .item p{display:block;max-width:100%}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  textarea,input[type=text],select{width:100%;background:#0d0f13;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit}
+  textarea{min-height:200px;resize:vertical}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .row>*{flex:1}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+  button:hover{background:var(--accent2)} button:disabled{opacity:.5;cursor:wait}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  button.small{padding:5px 10px;font-size:13px}
+  button.danger{background:transparent;color:var(--danger);border:1px solid #4a2530}
+  audio{width:100%;margin-top:12px}
+  .muted{color:var(--muted);font-size:13px}
+  .list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .item{border:1px solid var(--line);border-radius:10px;padding:10px}
+  .item .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .item p{margin:4px 0;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .err{color:var(--danger);font-size:13px;min-height:18px;margin-top:8px}
+  .rec{color:var(--danger);font-weight:600}
+  .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted);margin-top:10px}
+  .check input{margin-top:3px}
+  .bar{height:6px;background:#0d0f13;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  #barFill{height:100%;width:0;background:var(--accent);transition:width .3s}
+  .dl a{color:var(--accent2);margin-right:10px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎙️ Offline Voice Studio</h1>
+  <span id="status" class="pill">Loading model…</span>
+</header>
+
+<main>
+  <section>
+    <div class="card">
+      <h2>Text to speech</h2>
+      <textarea id="text" placeholder="Type or paste the text you want spoken…">Hello! This voice was generated entirely on my own computer, with no internet connection.</textarea>
+      <div class="muted" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <span><span id="count">0</span> / 20000 characters</span>
+        <a href="#" id="previewBtn" style="color:var(--accent2)">Preview how it will be read</a></div>
+      <div id="previewBox" class="item" style="display:none;margin-top:8px;white-space:pre-wrap;font-size:14px"></div>
+
+      <div class="row">
+        <div>
+          <label>Language engine</label>
+          <select id="engine">
+            <option value="chatterbox">English (Chatterbox)</option>
+            <option value="indic">Indian languages – Tamil, Hindi, Telugu… (IndicF5)</option>
+          </select>
+        </div>
+        <div>
+          <label>Voice</label>
+          <select id="voice"></select>
+        </div>
+      </div>
+      <div id="engineNote" class="muted" style="margin-top:6px"></div>
+
+      <div class="row" id="cbControls">
+        <div>
+          <label>Expressiveness: <span id="exV">0.5</span></label>
+          <input id="ex" type="range" min="0.25" max="2" step="0.05" value="0.5">
+        </div>
+        <div>
+          <label>Pace / guidance: <span id="cfgV">0.5</span></label>
+          <input id="cfg" type="range" min="0" max="1" step="0.05" value="0.5">
+        </div>
+      </div>
+      <p class="muted" id="cbTip">Tip: for dramatic speech, raise expressiveness and lower pace to ~0.3.</p>
+
+      <div class="row" style="gap:8px">
+        <button id="gen" style="flex:0 0 auto">Generate speech</button>
+        <button id="cancel" class="ghost" style="flex:0 0 auto;display:none">Stop</button>
+        <label class="check" style="margin:0;flex:1"><input id="live" type="checkbox" checked>
+          <span>Play while generating</span></label>
+      </div>
+      <div id="progress" style="display:none;margin-top:12px">
+        <div class="bar"><div id="barFill"></div></div>
+        <div id="progText" class="muted" style="margin-top:4px"></div>
+      </div>
+      <div id="genErr" class="err"></div>
+      <div id="result"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h2>History</h2>
+      <div id="history" class="list"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>Clone a voice</h2>
+      <label>Voice name</label>
+      <input id="vname" type="text" placeholder="e.g. My voice">
+
+      <label>Sample (6–15 seconds of clear speech, no music — longer is cut at a pause)</label>
+      <input id="vfile" type="file" accept="audio/*">
+      <div class="row" style="margin-top:10px">
+        <button id="recBtn" class="ghost">● Record from mic</button>
+      </div>
+      <div id="recInfo" class="muted"></div>
+      <audio id="recPreview" controls style="display:none"></audio>
+
+      <label>Transcript of the sample <span class="muted">(needed for Indian languages)</span></label>
+      <div class="row" style="gap:8px;margin-bottom:6px">
+        <select id="vlang" style="flex:1"><option value="">Auto-detect</option><option value="ta">Tamil</option><option value="hi">Hindi</option><option value="te">Telugu</option><option value="ml">Malayalam</option><option value="kn">Kannada</option><option value="bn">Bengali</option><option value="mr">Marathi</option><option value="gu">Gujarati</option><option value="pa">Punjabi</option><option value="en">English</option></select>
+        <button id="autoTr" class="ghost small" style="flex:0 0 auto">✨ Auto-fill</button>
+      </div>
+      <textarea id="vtext" style="min-height:70px" placeholder="Click Auto-fill, then correct any mistakes — or type exactly what is said."></textarea>
+
+      <label class="check"><input id="consent" type="checkbox">
+        <span>This is my own voice, or I have the speaker's permission to clone it.</span></label>
+
+      <button id="addVoice" style="margin-top:12px;width:100%">Save voice</button>
+      <div id="voiceErr" class="err"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h2>Voice library</h2>
+      <div id="voices" class="list"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h2>Pronunciation dictionary</h2>
+      <p class="muted" style="margin-top:0">Teach the studio how to say words — e.g. English words inside Tamil text.</p>
+      <div class="row" style="gap:8px">
+        <input id="pTerm" type="text" placeholder="Word (e.g. YouTube)">
+        <input id="pSay" type="text" placeholder="Say as (e.g. யூடியூப்)">
+      </div>
+      <button id="pAdd" class="ghost" style="margin-top:8px;width:100%">Add / update word</button>
+      <div id="pErr" class="err"></div>
+      <div id="pList" class="list"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let recordedBlob = null;
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || `Request failed (${r.status})`);
+  return data;
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- status ----------
+let indicState = null;   // null = worker not running, else {loaded, device, error}
+async function pollStatus() {
+  let again = true;
+  try {
+    const s = await api('/api/status');
+    indicState = s.indic;
+    const indic = !s.indic ? '' : s.indic.loaded ? ' · Indic ✓' : ' · Indic loading…';
+    if (s.loaded) {
+      $('status').textContent = `Ready · ${s.device.toUpperCase()}${indic}`; $('status').className = 'pill ok';
+      again = !!(s.indic && !s.indic.loaded && !s.indic.error);
+    } else $('status').textContent = s.error ? 'Model failed to load' : 'Loading model…';
+  } catch { $('status').textContent = 'Server offline'; }
+  updateEngineUi();
+  if (again) setTimeout(pollStatus, 2000);
+}
+
+// ---------- voices ----------
+let voiceList = [];
+function fillVoiceSelect() {
+  const sel = $('voice'), cur = sel.value, indic = $('engine').value === 'indic';
+  const opts = indic
+    ? [['builtin:pan_f', 'Indic female (built-in)']].concat(
+        voiceList.map(v => [v.id, v.transcript ? v.name : `${v.name} (add transcript first)`, !v.transcript]))
+    : [['', 'Default voice']].concat(voiceList.map(v => [v.id, v.name]));
+  sel.innerHTML = opts.map(([id, name, off]) =>
+    `<option value="${id}" ${off ? 'disabled' : ''}>${esc(name)}</option>`).join('');
+  if (opts.some(o => o[0] === cur && !o[2])) sel.value = cur;
+}
+function updateEngineUi() {
+  const indic = $('engine').value === 'indic';
+  $('cbControls').style.display = $('cbTip').style.display = indic ? 'none' : '';
+  $('engineNote').textContent = !indic ? '' :
+    !indicState ? '⚠ Indian-language engine is not running. Run setup_indic.bat once, then restart with run.bat.'
+    : indicState.error ? '⚠ Indian-language engine failed to load: ' + indicState.error
+    : !indicState.loaded ? 'Indian-language engine is loading…'
+    : 'Write in Tamil, Hindi, Telugu, Malayalam, Kannada, Bengali, Marathi, Gujarati, Punjabi, Odia or Assamese script. Cloned voices need their sample transcript; samples of 6–15 seconds work best (only the first 15 s is used).';
+}
+$('engine').onchange = () => {
+  try { localStorage.setItem('vs_engine', $('engine').value); } catch {}
+  fillVoiceSelect(); updateEngineUi();
+};
+try { const e = localStorage.getItem('vs_engine'); if (e) $('engine').value = e; } catch {}
+
+async function loadVoices() {
+  voiceList = await api('/api/voices');
+  fillVoiceSelect();
+  $('voices').innerHTML = voiceList.length ? voiceList.map(v => `
+    <div class="item">
+      <div class="top"><strong>${esc(v.name)}</strong>
+        <button class="small danger" onclick="delVoice('${v.id}')">Delete</button></div>
+      <audio controls preload="none" src="/api/voices/${v.id}/audio"></audio>
+      <details style="margin-top:6px"><summary class="muted" style="cursor:pointer">
+        Transcript ${v.transcript ? '✓' : '— needed for Indian languages'}</summary>
+        <textarea id="tr_${v.id}" style="min-height:60px;margin-top:6px">${esc(v.transcript || '')}</textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <button class="small ghost" onclick="saveTranscript('${v.id}')">Save transcript</button>
+          <button class="small ghost" id="af_${v.id}" onclick="autoFillVoice('${v.id}')">✨ Auto-fill</button></div>
+      </details>
+    </div>`).join('') : '<p class="muted">No cloned voices yet.</p>';
+}
+// ---------- automatic transcripts (Whisper) ----------
+async function autoFillVoice(id) {
+  const b = $('af_' + id); b.disabled = true; b.textContent = 'Listening…';
+  try {
+    const fd = new FormData(); fd.append('voice_id', id); fd.append('lang', $('vlang').value);
+    const r = await api('/api/transcribe', {method: 'POST', body: fd});
+    $('tr_' + id).value = r.text;
+    b.textContent = '✓ Filled — check & Save';
+  } catch (e) { alertBox(e.message); b.textContent = '✨ Auto-fill'; }
+  b.disabled = false;
+}
+function alertBox(msg) { $('voiceErr').textContent = msg; }
+$('autoTr').onclick = async () => {
+  $('voiceErr').textContent = '';
+  const file = $('vfile').files[0], audio = recordedBlob || file;
+  if (!audio) return $('voiceErr').textContent = 'Upload or record a sample first.';
+  const fd = new FormData();
+  fd.append('audio', audio, recordedBlob ? 'recording.wav' : file.name);
+  fd.append('lang', $('vlang').value);
+  $('autoTr').disabled = true; $('autoTr').textContent = 'Listening…';
+  try {
+    const r = await api('/api/transcribe', {method: 'POST', body: fd});
+    $('vtext').value = r.text;
+    $('voiceErr').textContent = 'Transcript filled — please read it and fix any wrong words.';
+  } catch (e) { $('voiceErr').textContent = e.message; }
+  $('autoTr').disabled = false; $('autoTr').textContent = '✨ Auto-fill';
+};
+
+// ---------- pronunciation dictionary ----------
+async function loadDict() {
+  const items = await api('/api/pronunciations');
+  $('pList').innerHTML = items.map(p => `<div class="item" style="padding:6px 10px">
+    <div class="top"><span><strong>${esc(p.term)}</strong> → ${esc(p.replacement)}</span>
+    <button class="small danger" onclick="delDict('${p.id}')">✕</button></div></div>`).join('')
+    || '<p class="muted">No words yet.</p>';
+}
+async function delDict(id) { await api(`/api/pronunciations/${id}`, {method: 'DELETE'}); loadDict(); }
+$('pAdd').onclick = async () => {
+  $('pErr').textContent = '';
+  const fd = new FormData(); fd.append('term', $('pTerm').value); fd.append('replacement', $('pSay').value);
+  try { await api('/api/pronunciations', {method: 'POST', body: fd}); $('pTerm').value = $('pSay').value = ''; loadDict(); }
+  catch (e) { $('pErr').textContent = e.message; }
+};
+
+// ---------- preview of cleaned-up text ----------
+$('previewBtn').onclick = async (ev) => {
+  ev.preventDefault();
+  const fd = new FormData(); fd.append('text', $('text').value); fd.append('engine', $('engine').value);
+  try {
+    const r = await api('/api/preview-text', {method: 'POST', body: fd});
+    $('previewBox').style.display = 'block';
+    $('previewBox').textContent = (r.lang_name ? `[${r.lang_name}] ` : '') + r.text;
+  } catch (e) { $('genErr').textContent = e.message; }
+};
+
+async function saveTranscript(id) {
+  const fd = new FormData(); fd.append('transcript', $('tr_' + id).value);
+  await api(`/api/voices/${id}`, {method: 'PATCH', body: fd}); loadVoices();
+}
+async function delVoice(id) {
+  if (!confirm('Delete this voice?')) return;
+  await api(`/api/voices/${id}`, {method: 'DELETE'}); loadVoices();
+}
+
+$('addVoice').onclick = async () => {
+  $('voiceErr').textContent = '';
+  const file = $('vfile').files[0];
+  const audio = recordedBlob || file;
+  if (!audio) return $('voiceErr').textContent = 'Upload a file or record a sample.';
+  const fd = new FormData();
+  fd.append('name', $('vname').value);
+  fd.append('consent', $('consent').checked);
+  fd.append('transcript', $('vtext').value);
+  fd.append('audio', audio, recordedBlob ? 'recording.wav' : file.name);
+  $('addVoice').disabled = true;
+  try {
+    const r = await api('/api/voices', {method: 'POST', body: fd});
+    if (r.note) $('voiceErr').textContent = r.note;
+    $('vname').value = ''; $('vfile').value = ''; $('vtext').value = ''; recordedBlob = null;
+    $('recPreview').style.display = 'none'; $('recInfo').textContent = ''; $('consent').checked = false;
+    await loadVoices();
+  } catch (e) { $('voiceErr').textContent = e.message; }
+  $('addVoice').disabled = false;
+};
+
+// ---------- mic recording -> WAV (no ffmpeg needed) ----------
+let mediaRec = null, chunks = [], recTimer = null;
+$('recBtn').onclick = async () => {
+  if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    chunks = []; mediaRec = new MediaRecorder(stream);
+    mediaRec.ondataavailable = e => chunks.push(e.data);
+    mediaRec.onstop = async () => {
+      clearInterval(recTimer); stream.getTracks().forEach(t => t.stop());
+      $('recBtn').textContent = '● Record from mic'; $('recBtn').classList.remove('rec');
+      const buf = await new Blob(chunks).arrayBuffer();
+      const ctx = new AudioContext();
+      const decoded = await ctx.decodeAudioData(buf);
+      recordedBlob = toWav(decoded);
+      $('recPreview').src = URL.createObjectURL(recordedBlob); $('recPreview').style.display = 'block';
+      $('recInfo').textContent = `Recorded ${decoded.duration.toFixed(1)}s — this will be used instead of an uploaded file.`;
+    };
+    mediaRec.start();
+    let t = 0; $('recBtn').textContent = '■ Stop (0s)'; $('recBtn').classList.add('rec');
+    recTimer = setInterval(() => { t++; $('recBtn').textContent = `■ Stop (${t}s)`; if (t >= 30) mediaRec.stop(); }, 1000);
+  } catch (e) { $('voiceErr').textContent = 'Microphone not available: ' + e.message; }
+};
+function toWav(ab) {
+  const ch = ab.getChannelData(0), sr = ab.sampleRate, n = ch.length;
+  const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0,'RIFF'); v.setUint32(4, 36 + n*2, true); w(8,'WAVE'); w(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  w(36,'data'); v.setUint32(40, n*2, true);
+  for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, ch[i])); v.setInt16(44 + i*2, s < 0 ? s*0x8000 : s*0x7fff, true); }
+  return new Blob([buf], {type: 'audio/wav'});
+}
+
+// ---------- generate ----------
+$('text').oninput = () => $('count').textContent = $('text').value.length;
+$('ex').oninput = () => $('exV').textContent = $('ex').value;
+$('cfg').oninput = () => $('cfgV').textContent = $('cfg').value;
+
+// Streaming player: plays chunk 0,1,2… as soon as each one is ready.
+let job = null, player = null, playIdx = 0, playing = false;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const dlLinks = id => `<span class="dl">
+  <a href="/api/audio/${id}" download>WAV</a>
+  <a href="/api/audio/${id}?format=mp3" download>MP3</a>
+  <a href="/api/subtitles/${id}" download>Subtitles (SRT)</a></span>`;
+
+function playNext() {
+  if (!job || !$('live').checked || playing || playIdx >= job.done) return;
+  playing = true;
+  player = new Audio(`/api/jobs/${job.id}/chunks/${playIdx}`);
+  player.onended = player.onerror = () => { playing = false; playIdx++; setTimeout(playNext, 250); };
+  player.play().catch(() => { playing = false; });
+}
+
+function showProgress(j) {
+  $('progress').style.display = 'block';
+  const pct = j.total ? Math.round(100 * j.done / j.total) : 0;
+  $('barFill').style.width = pct + '%';
+  $('progText').textContent = j.status === 'queued' ? 'Waiting in queue…'
+    : `Sentence ${j.done} of ${j.total} ready (${pct}%)`;
+}
+
+function resetGenUi() {
+  $('gen').disabled = false; $('gen').textContent = 'Generate speech';
+  $('cancel').style.display = 'none';
+}
+
+$('gen').onclick = async () => {
+  $('genErr').textContent = ''; $('result').innerHTML = '';
+  if (player) { player.pause(); player = null; }
+  const fd = new FormData();
+  fd.append('text', $('text').value); fd.append('voice_id', $('voice').value);
+  fd.append('exaggeration', $('ex').value); fd.append('cfg_weight', $('cfg').value);
+  fd.append('engine', $('engine').value);
+  $('gen').disabled = true; $('gen').textContent = 'Generating…';
+  try {
+    job = await api('/api/jobs', {method: 'POST', body: fd});
+    playIdx = 0; playing = false; $('cancel').style.display = '';
+    while (true) {
+      job = await api(`/api/jobs/${job.id}`);
+      showProgress(job); playNext();
+      if (['done', 'error', 'cancelled'].includes(job.status)) break;
+      await sleep(400);
+    }
+    if (job.status === 'cancelled') throw new Error('Stopped.');
+    if (job.status === 'error') throw new Error(job.error);
+    const id = job.history_id;
+    $('progress').style.display = 'none';
+    $('result').innerHTML = `<audio id="final" controls src="/api/audio/${id}"></audio>
+      <p class="muted">${job.seconds}s of audio in ${job.gen_seconds}s · ${dlLinks(id)}</p>`;
+    if (!$('live').checked) $('final').play();
+    loadHistory();
+  } catch (e) { $('genErr').textContent = e.message; $('progress').style.display = 'none'; }
+  resetGenUi();
+};
+
+$('cancel').onclick = async () => {
+  if (player) player.pause();
+  if (job) await api(`/api/jobs/${job.id}/cancel`, {method: 'POST'}).catch(() => {});
+};
+
+// ---------- history ----------
+async function loadHistory() {
+  const h = await api('/api/history');
+  $('history').innerHTML = h.length ? h.map(x => `
+    <div class="item">
+      <div class="top"><span class="muted">${esc(x.voice_name)} · ${x.seconds.toFixed(1)}s</span>
+        <span class="dl"><a href="/api/audio/${x.id}" download>WAV</a>
+        <a href="/api/audio/${x.id}?format=mp3" download>MP3</a>
+        ${x.has_srt ? `<a href="/api/subtitles/${x.id}" download>SRT</a>` : ''}
+        <button class="small danger" onclick="delHist('${x.id}')">✕</button></span></div>
+      <p title="${esc(x.text)}">${esc(x.text)}</p>
+      <audio controls preload="none" src="/api/audio/${x.id}"></audio>
+    </div>`).join('') : '<p class="muted">Nothing generated yet.</p>';
+}
+async function delHist(id) { await api(`/api/history/${id}`, {method: 'DELETE'}); loadHistory(); }
+
+$('count').textContent = $('text').value.length;
+pollStatus(); loadVoices(); loadHistory(); loadDict();
+</script>
+</body>
+</html>

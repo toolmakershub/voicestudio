@@ -1,0 +1,6 @@
+chatterbox-tts
+fastapi
+uvicorn
+python-multipart
+soundfile
+indic-numtowords

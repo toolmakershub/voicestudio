@@ -1,0 +1,27 @@
+# ---- NEVER COMMIT ----------------------------------------------------------
+# Downloaded models AND the Hugging Face login token (models/token)
+models/
+.cache/
+*.token
+.env
+.env.*
+
+# Virtual environments (re-created by setup_gpu.bat / setup_indic.bat)
+.venv/
+.venv-indic/
+venv/
+
+# User data: voice samples, generated audio, SQLite database
+data/
+*.db
+*.sqlite
+
+# ---- build / OS / editor noise ---------------------------------------------
+__pycache__/
+*.py[cod]
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/

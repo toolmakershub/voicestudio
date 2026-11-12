@@ -1,0 +1,7 @@
+* text=auto
+# Windows launchers must keep CRLF line endings or cmd.exe misreads them
+*.bat text eol=crlf
+*.sh  text eol=lf
+*.py  text eol=lf
+*.wav binary
+*.mp3 binary
