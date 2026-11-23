@@ -1,48 +1,68 @@
 name: Release
 
-# Runs when a version tag such as v0.5.0 is pushed.
-# Checks that VERSION and CHANGELOG.md match the tag, then publishes a
-# GitHub Release with the changelog entry and two downloadable zips.
+# A release is made when the VERSION file changes on main (or when a vX.Y.Z tag
+# is pushed by hand). The workflow creates the tag itself, publishes a GitHub
+# Release with the CHANGELOG.md entry as notes, and attaches two zips.
 on:
   push:
+    branches: [main]
+    paths: [VERSION, .github/workflows/release.yml]
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Check VERSION matches the tag
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          FILE="v$(tr -d '[:space:]' < VERSION)"
-          if [ "$TAG" != "$FILE" ]; then
-            echo "::error::Tag $TAG does not match VERSION file ($FILE). Update VERSION before tagging."
-            exit 1
-          fi
-
-      - name: Extract release notes from CHANGELOG.md
-        run: |
-          python3 scripts/changelog_section.py "${GITHUB_REF_NAME}" > notes.md
-          cat notes.md
-
-      - name: Build zips
-        run: |
-          V="${GITHUB_REF_NAME}"
-          git archive --format=zip --prefix="voicestudio-$V/" -o "voicestudio-$V.zip" HEAD
-          git archive --format=zip --prefix="voicestudio-lite-$V/" -o "voicestudio-lite-$V.zip" HEAD:lite
-
-      - name: Publish GitHub Release
+      - name: Work out the version
+        id: v
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          V="${GITHUB_REF_NAME}"
+          FILE="v$(tr -d '[:space:]' < VERSION)"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "$FILE" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION file ($FILE). Update VERSION before tagging."
+            exit 1
+          fi
+          echo "tag=$FILE" >> "$GITHUB_OUTPUT"
+          if gh release view "$FILE" >/dev/null 2>&1; then
+            echo "Release $FILE already exists - nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.v.outputs.skip != 'true'
+        run: |
+          python3 scripts/changelog_section.py "${{ steps.v.outputs.tag }}" > notes.md
+          cat notes.md
+
+      - name: Build zips
+        if: steps.v.outputs.skip != 'true'
+        run: |
+          V="${{ steps.v.outputs.tag }}"
+          git archive --format=zip --prefix="voicestudio-$V/" -o "voicestudio-$V.zip" HEAD
+          git archive --format=zip --prefix="voicestudio-lite-$V/" -o "voicestudio-lite-$V.zip" HEAD:lite
+
+      - name: Create tag and publish GitHub Release
+        if: steps.v.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.v.outputs.tag }}"
           PRE=""
           case "$V" in v0.*|*-*) PRE="--prerelease" ;; esac
-          gh release create "$V" --title "Voice Studio $V" --notes-file notes.md $PRE \
+          gh release create "$V" --target "${GITHUB_SHA}" --title "Voice Studio $V" \
+            --notes-file notes.md $PRE \
             "voicestudio-$V.zip#Voice Studio (full, GPU) $V" \
             "voicestudio-lite-$V.zip#Voice Studio Lite (Piper, no GPU) $V"

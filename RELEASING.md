@@ -19,19 +19,20 @@ Stay on `v0.x` while it is only for you; release `v1.0.0` when other people star
 ## Cutting a release (about 2 minutes)
 1. In `CHANGELOG.md`, rename `## Unreleased` to `## v0.6.0 — YYYY-MM-DD` and add a new empty `## Unreleased` above it.
 2. Put the same number, without the `v`, in `VERSION` (e.g. `0.6.0`).
-3. Commit and tag:
+3. Commit and push to `main`:
    ```
    git add CHANGELOG.md VERSION
    git commit -m "Release v0.6.0"
-   git tag v0.6.0
-   git push origin main v0.6.0
+   git push origin main
    ```
-4. GitHub Actions (**Release** workflow) then:
-   - stops if the tag doesn't match `VERSION` or the changelog has no entry for it,
+4. Because `VERSION` changed, GitHub Actions (**Release** workflow):
+   - stops if the changelog has no `## v0.6.0` entry,
+   - creates the tag `v0.6.0` on that commit,
    - publishes a GitHub Release with the changelog entry as notes,
    - attaches `voicestudio-v0.6.0.zip` (full) and `voicestudio-lite-v0.6.0.zip` (Lite).
 
-Check it under **Actions** and **Releases** on GitHub.
+Check it under **Actions** and **Releases** on GitHub. If a release already exists for that version, the workflow does nothing.
+(Pushing a `v0.6.0` tag yourself also works; it must match `VERSION`.)
 
 ## A release went wrong
 Fix it on `main`, then release the next PATCH (e.g. `v0.6.1`). Don't move or reuse a tag that was already pushed: anyone who updated already has it.

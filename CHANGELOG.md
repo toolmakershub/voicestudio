@@ -11,8 +11,8 @@ Add new items under **Unreleased** as you work; they move into a version heading
   sentence-timed SRT subtitles, one file per paragraph, `[pause 1.5]` markers.
 - Version number shown in the studio header and returned by `/api/status`
   (read from the new `VERSION` file).
-- Release process: pushing a `vX.Y.Z` tag publishes a GitHub Release with the changelog
-  entry, a full zip and a Lite zip (`.github/workflows/release.yml`).
+- Release process: changing `VERSION` on `main` creates the `vX.Y.Z` tag and a GitHub Release
+  with the changelog entry, a full zip and a Lite zip (`.github/workflows/release.yml`).
 - `update.bat` now moves to the latest *released* version instead of only installing
   libraries; it still installs missing libraries and models afterwards.
 - Repository renamed to `toolmakershub/voicestudio`.
