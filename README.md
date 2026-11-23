@@ -1,4 +1,4 @@
-# Offline Voice Studio
+# ToolMakersHub Voice Studio
 
 An ElevenLabs-style text-to-speech studio that runs **entirely on your own PC** —
 no internet, API keys or per-character fees after the one-time setup.
@@ -24,6 +24,30 @@ no internet, API keys or per-character fees after the one-time setup.
 | 3 | `update.bat` | Extra libraries + Whisper speech-to-text (~1.6 GB) |
 
 Then start with **`run.bat`** → http://127.0.0.1:7860 (works offline).
+
+### Get the code
+Recommended (lets `update.bat` move you to new releases):
+```
+cd C:\toolmakershub.com
+git clone https://github.com/toolmakershub/voicestudio.git voice.toolmakershub.com
+```
+Or download a zip from **Releases** on GitHub.
+
+### Updating
+Run **`update.bat`**: it switches to the newest release, then installs any new libraries
+and models. The version you are on is shown in the studio header.
+
+## Editions
+| | Voice Studio (this folder) | Voice Studio Lite (`lite/`) |
+|---|---|---|
+| Engines | Chatterbox + IndicF5 | Piper |
+| Voice cloning | Yes | No |
+| Tamil / Indian languages | 11 languages, best quality | Tamil (male), Hindi |
+| Needs | NVIDIA GPU 6 GB+, ~15 GB disk | Any PC, ~100 MB per voice |
+| Start | `run.bat` | `lite\run_lite.bat` |
+
+## Versions and releases
+See [CHANGELOG.md](CHANGELOG.md) for what changed and [RELEASING.md](RELEASING.md) for how a release is made.
 
 ## Architecture
 ```

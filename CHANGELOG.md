@@ -1,5 +1,22 @@
 # Changelog
 
+All notable changes to Voice Studio. Versions follow MAJOR.MINOR.PATCH (see RELEASING.md).
+Add new items under **Unreleased** as you work; they move into a version heading when you release.
+
+## Unreleased
+
+## v0.5.0 — 2026-11-23
+- **Voice Studio Lite** (`lite/`): the lightweight Piper desktop app — no GPU, no voice
+  cloning, ~100 MB per voice. Includes a Tamil voice (`ta_IN-rasa_male-medium`, CC-BY-4.0),
+  sentence-timed SRT subtitles, one file per paragraph, `[pause 1.5]` markers.
+- Version number shown in the studio header and returned by `/api/status`
+  (read from the new `VERSION` file).
+- Release process: pushing a `vX.Y.Z` tag publishes a GitHub Release with the changelog
+  entry, a full zip and a Lite zip (`.github/workflows/release.yml`).
+- `update.bat` now moves to the latest *released* version instead of only installing
+  libraries; it still installs missing libraries and models afterwards.
+- Repository renamed to `toolmakershub/voicestudio`.
+
 ## v0.4 — 2026-11-12
 - Automatic sample transcripts with Whisper large-v3-turbo ("✨ Auto-fill").
 - Samples longer than 15 s are cut at a natural pause (IndicF5 uses the first 15 s).

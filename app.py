@@ -27,6 +27,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 
 BASE = Path(__file__).parent
+VERSION = (BASE / "VERSION").read_text(encoding="utf-8").strip() if (BASE / "VERSION").exists() else "dev"
 DATA = BASE / "data"
 VOICES = DATA / "voices"
 OUTPUTS = DATA / "outputs"
@@ -43,7 +44,7 @@ MIN_REF_SEC, MAX_REF_SEC = 5, 15   # IndicF5 only uses the first 15 s of a sampl
 INDIC_URL = os.environ.get("VS_INDIC_URL", "http://127.0.0.1:7861")
 ENGINES = {"chatterbox": "English (Chatterbox)", "indic": "Indian languages (IndicF5)"}
 
-app = FastAPI(title="Offline Voice Studio")
+app = FastAPI(title="Voice Studio", version=VERSION)
 
 # ---------------------------------------------------------------- model ----
 _model = None
@@ -437,7 +438,7 @@ def index():
 
 @app.get("/api/status")
 def status():
-    return {"loaded": _model is not None, "device": _device, "error": _load_error,
+    return {"version": VERSION, "loaded": _model is not None, "device": _device, "error": _load_error,
             "queue": _job_q.qsize(), "indic": indic_health(), "gpu": gpu_info(),
             "stt": _stt_ready()}
 

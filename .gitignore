@@ -25,3 +25,7 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# Voice Studio Lite: downloaded Piper voices and per-user settings
+lite/voices/
+lite/settings.json

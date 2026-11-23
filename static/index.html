@@ -48,6 +48,7 @@
 <body>
 <header>
   <h1>🎙️ Offline Voice Studio</h1>
+  <span id="version" class="pill"></span>
   <span id="status" class="pill">Loading model…</span>
 </header>
 
@@ -174,6 +175,7 @@ async function pollStatus() {
   try {
     const s = await api('/api/status');
     indicState = s.indic;
+    if (s.version) $('version').textContent = 'v' + s.version.replace(/^v/, '');
     const indic = !s.indic ? '' : s.indic.loaded ? ' · Indic ✓' : ' · Indic loading…';
     if (s.loaded) {
       $('status').textContent = `Ready · ${s.device.toUpperCase()}${indic}`; $('status').className = 'pill ok';
