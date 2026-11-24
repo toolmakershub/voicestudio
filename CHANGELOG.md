@@ -4,6 +4,7 @@ All notable changes to Voice Studio. Versions follow MAJOR.MINOR.PATCH (see RELE
 Add new items under **Unreleased** as you work; they move into a version heading when you release.
 
 ## Unreleased
+- Open source: AGPL-3.0 licence, CLA, contributing guide, security policy, third-party licence list.
 
 ## v0.5.0 — 2026-11-23
 - **Voice Studio Lite** (`lite/`): the lightweight Piper desktop app — no GPU, no voice

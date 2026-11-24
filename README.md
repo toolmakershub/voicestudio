@@ -1,6 +1,11 @@
 # ToolMakersHub Voice Studio
 
-An ElevenLabs-style text-to-speech studio that runs **entirely on your own PC** —
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/website-voice.toolmakershub.com-00b4db.svg)](https://voice.toolmakershub.com)
+
+**Open source** · Your tools. Your device. Your AI.
+
+A text-to-speech and voice-cloning studio that runs **entirely on your own PC** —
 no internet, API keys or per-character fees after the one-time setup.
 
 - **English** — Chatterbox (Resemble AI, MIT): expressive speech + voice cloning
@@ -80,6 +85,14 @@ Studio API — app.py (FastAPI, Python 3.11, port 7860)
 ## Never committed (see .gitignore)
 `models/` (includes the Hugging Face token), `.venv*/`, `data/` (voice samples & audio).
 
-## Licenses
-Chatterbox — MIT · IndicF5 — MIT · Whisper — MIT · indic-numtowords — MIT.
+## Contributing
+Ideas, bug reports and code are all welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Ideas:** https://voice.toolmakershub.com/#ideas (follow them on "My ideas" with a free ToolMakersHub account)
+- **Contributors** are listed on [voice.toolmakershub.com](https://voice.toolmakershub.com/#contributors) and [toolmakershub.com/contributors](https://toolmakershub.com/contributors)
+
+## License
+Voice Studio is licensed under the **GNU Affero General Public License v3.0**: see [LICENSE](LICENSE).
+Contributions are accepted under the [CLA](CLA.md). For a commercial licence, email hello@toolmakershub.com.
+
+Third-party models and libraries keep their own licences: see [THIRD-PARTY.md](THIRD-PARTY.md).
 Only clone voices you own or have explicit permission to use.
